@@ -50,7 +50,7 @@ fn main() -> io::Result<()> {
                 println!("No tasks found.");
             } else {
                 for task in &tasks {
-                    let status = if task.done { "✓" } else { " " };
+                    let status = if task.done { "✅" } else { "⌛" };
                     println!("[{}] {}: {}", status, task.id, task.description);
                 }
             }
@@ -83,6 +83,10 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
+/**
+ * JSONファイルからタスクを読み込む
+ * @return タスクリスト
+ */
 fn load_tasks() -> io::Result<Vec<Task>> {
     let file = File::open(FILE_PATH)?;
     let reader = BufReader::new(file);
@@ -90,6 +94,11 @@ fn load_tasks() -> io::Result<Vec<Task>> {
     Ok(tasks)
 }
 
+/**
+ * タスクをJSONファイルに保存する
+ * @param tasks タスクリスト
+ * @return io::Result<()>
+ */
 fn save_tasks(tasks: &[Task]) -> io::Result<()> {
     let mut file = OpenOptions::new()
         .write(true)
