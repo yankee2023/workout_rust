@@ -5,6 +5,7 @@ use std::io::{self, BufReader, Write};
 
 const FILE_PATH: &str = "todo.json";
 
+/// タスクを表す構造体
 #[derive(Serialize, Deserialize, Debug)]
 struct Task {
     id: u32,
@@ -12,6 +13,9 @@ struct Task {
     done: bool,
 }
 
+/// コマンドライン引数をパースするための構造体
+/// - `command`: サブコマンドを定義するための列挙型
+/// - `description`: タスクの説明
 #[derive(Parser)]
 #[command(name = "todo")]
 #[command(about = "A simple CLI ToDo list written in Rust")]
@@ -20,6 +24,7 @@ struct Cli {
     command: Commands,
 }
 
+/// サブコマンドを定義するための列挙型
 #[derive(Subcommand)]
 enum  Commands {
     Add { description: String },
@@ -56,6 +61,7 @@ fn main() -> io::Result<()> {
             }
         }
         Commands::Done { id } => {
+            // |t|はクロージャの書き方で、tはタスクの参照
             if let Some(task) = tasks.iter_mut().find(|t| t.id == id) {
                 task.done = true;
                 save_tasks(&tasks)?;
@@ -100,6 +106,7 @@ fn load_tasks() -> io::Result<Vec<Task>> {
  * @return io::Result<()>
  */
 fn save_tasks(tasks: &[Task]) -> io::Result<()> {
+    // ?を使って失敗した場合はreturnする
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
