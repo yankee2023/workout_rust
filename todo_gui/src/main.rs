@@ -8,7 +8,10 @@ const FONT_PATH: &str = "Noto_Sans_JP/static/NotoSansJP-Black.ttf";
 const FONT_JP: &str = "my_jp";
 
 /// タスクの構造体
-#[derive(Serialize, Deserialize, Debug, Clone)]
+/// - `id`: タスクの一意な識別子
+/// - `description`: タスクの内容
+/// - `done`: タスクが完了しているかどうか
+#[derive(Serialize, Deserialize)]
 struct Task {
     id: u32,
     description: String,
@@ -16,6 +19,9 @@ struct Task {
 }
 
 /// ToDoアプリケーションの状態を保持する構造体
+/// - `tasks`: タスクのリスト
+/// - `new_task`: 新しいタスクの入力内容
+/// - `next_id`: 次に割り当てるタスクのID
 pub struct ToDoApp {
     tasks: Vec<Task>,
     new_task: String,
@@ -44,6 +50,7 @@ impl App for ToDoApp {
             // 入力欄と追加ボタン
             ui.horizontal(|ui| {
                 ui.text_edit_singleline(&mut self.new_task);
+
                 if ui.button("追加").clicked() {
                     if !self.new_task.trim().is_empty() {
                         self.tasks.push(Task {
@@ -56,6 +63,12 @@ impl App for ToDoApp {
                         let _ = save_tasks(&self.tasks);
                     }
                 }
+
+                if ui.button("全削除").clicked() {
+                    self.tasks.clear();
+                    self.next_id = 1; // IDをリセット
+                    let _ = save_tasks(&self.tasks);
+                }
             });
 
             ui.separator();
@@ -64,6 +77,7 @@ impl App for ToDoApp {
             for task in &mut self.tasks {
                 ui.horizontal(|ui| {
                     ui.checkbox(&mut task.done, "");
+                    ui.label(task.id.to_string());
                     ui.label(if task.done {
                         format!("✅ {}", task.description)
                     } else {
