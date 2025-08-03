@@ -1,19 +1,33 @@
-use clap::{arg, App};
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[clap(name = "My RPN program",
+       version = "1.0.0",
+       author = "Your Name",
+       about = "Super awesome sample RPN calculator")]
+struct Opts {
+    /// Sets the level of verbosity
+    #[clap(short, long)]
+    verbose :bool,
+
+    /// Formulas written in RPN
+    #[clap(name = "FILE")]
+    formula_file: Option<String>,
+}
 
 fn main() {
-    let matches = App::new("Sample CLI")
-        .version("1.0.0")
-        .author("Your Name")
-        .about("Super awesome sample RPN calculator")
-        .arg(arg!([FILE] "The input file to use").required(false))
-        .arg(arg!(-v --verbose ... "Sets the level of verbosity").required(false))
-        .get_matches();
+    let opts = Opts::parse();
 
-    match matches.value_of("FILE") {
-        Some(file) => println!("Using file: {}", file),
-        None => println!("No file provided"),
+    if let Some(path) = opts.formula_file {
+        let f = File::open(path).unwrap();
+        let reader = BufReader::new(f);
+        for line in reader.lines() {
+            let line = line.unwrap();
+            println!("{}", line);
+        }
+    } else {
+        println!("No file is specified.");
     }
-
-    let verbose = matches.is_present("verbose");
-    println!("Verbose mode is {}", if verbose { "on" } else { "off" });
 }
