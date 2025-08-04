@@ -91,3 +91,26 @@ fn run<R: BufRead>(reader: R, verbose: bool) {
         println!("{}", answer);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ok() {
+        let calc = RpnCalculator::new(false);
+        assert_eq!(calc.evaluate("2 3 +"), 5);
+        assert_eq!(calc.evaluate("2 3 -"), -1);
+        assert_eq!(calc.evaluate("2 3 *"), 6);
+        assert_eq!(calc.evaluate("6 3 /"), 2);
+        assert_eq!(calc.evaluate("5 2 %"), 1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_ng() {
+        let calc = RpnCalculator::new(false);
+        // 逆ポーランド記法の文法に違反している
+        calc.evaluate("2 3 ~");
+    }
+}
