@@ -1,6 +1,10 @@
 use std::fs::File;
 use std::io::{stdin, BufRead, BufReader};
 use clap::Parser;
+use anyhow::{bail, ensure, Context, Result};
+
+/// 逆ポーランド記法を計算する構造体
+struct RpnCalculator(bool);
 
 #[derive(Parser, Debug)]
 #[clap(name = "My RPN program",
@@ -17,23 +21,23 @@ struct Opts {
     formula_file: Option<String>,
 }
 
-/// 逆ポーランド記法を計算する構造体
-struct RpnCalculator(bool);
-
 impl RpnCalculator {
     pub fn new(verbose: bool) -> Self {
         Self(verbose)
     }
 
-    pub fn evaluate(&self, formula: &str) -> i32 {
+    pub fn evaluate(&self, formula: &str) -> Result<i32> {
         let mut tokens = formula.split_whitespace().rev().collect::<Vec<_>>();
         self.evaluate_inner(&mut tokens)
     }
 
-    fn evaluate_inner(&self, tokens: &mut Vec<&str>) -> i32 {
+    fn evaluate_inner(&self, tokens: &mut Vec<&str>) -> Result<i32> {
         let mut stack = Vec::new();
+        let mut pos = 0;
 
         while let Some(token) = tokens.pop() {
+            pos += 1;
+
             if let Ok(x) = token.parse::<i32>() {
                 stack.push(x);
             } else {
@@ -45,7 +49,7 @@ impl RpnCalculator {
                     "*" => x * y,
                     "/" => x / y,
                     "%" => x % y,
-                    _ => panic!("invalid token"),
+                    _ => bail!("invalid token at {}", pos),
                 };
                 stack.push(result);
             }
@@ -56,25 +60,23 @@ impl RpnCalculator {
             }
         }
 
-        if stack.len() == 1 {
-            stack[0]
-        } else {
-            panic!("invalid syntax")
-        }
+        ensure!(stack.len() == 1, "invalid syntax");
+
+        Ok(stack[0])
     }
 }
 
-fn main() {
+fn main() -> Result<()>{
     let opts = Opts::parse();
 
     if let Some(path) = opts.formula_file {
-        let f = File::open(path).unwrap();
+        let f = File::open(path)?;
         let reader = BufReader::new(f);
-        run(reader, opts.verbose);
+        run(reader, opts.verbose)
     } else {
         let stdin = stdin();
         let reader = stdin.lock();
-        run(reader, opts.verbose);
+        run(reader, opts.verbose)
     }
 }
 
@@ -82,14 +84,18 @@ fn main() {
 /// # Arguments:
 /// * `reader`: A reader that provides lines of input
 /// * `verbose`: A boolean indicating if verbose output is enabled
-fn run<R: BufRead>(reader: R, verbose: bool) {
+fn run<R: BufRead>(reader: R, verbose: bool) -> Result<()> {
     let calc = RpnCalculator::new(verbose);
 
     for line in reader.lines() {
-        let line = line.unwrap();
-        let answer = calc.evaluate(&line);
-        println!("{}", answer);
+        let line = line?;
+        match calc.evaluate(&line) {
+            Ok(answer) => println!("{}", answer),
+            Err(e) => eprintln!("Error evaluating '{}': {}", line, e),
+        }
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -99,11 +105,12 @@ mod tests {
     #[test]
     fn test_ok() {
         let calc = RpnCalculator::new(false);
-        assert_eq!(calc.evaluate("2 3 +"), 5);
-        assert_eq!(calc.evaluate("2 3 -"), -1);
-        assert_eq!(calc.evaluate("2 3 *"), 6);
-        assert_eq!(calc.evaluate("6 3 /"), 2);
-        assert_eq!(calc.evaluate("5 2 %"), 1);
+        assert_eq!(calc.evaluate(#5).unwrap(), 5);
+        assert_eq!(calc.evaluate("2 3 +").unwrap(), 5);
+        assert_eq!(calc.evaluate("2 3 -").unwrap(), -1);
+        assert_eq!(calc.evaluate("2 3 *").unwrap(), 6);
+        assert_eq!(calc.evaluate("6 3 /").unwrap(), 2);
+        assert_eq!(calc.evaluate("5 2 %").unwrap(), 1);
     }
 
     #[test]
@@ -111,6 +118,8 @@ mod tests {
     fn test_ng() {
         let calc = RpnCalculator::new(false);
         // 逆ポーランド記法の文法に違反している
-        calc.evaluate("2 3 ~");
+        assert!(calc.evaluate(""), is_err());
+        assert!(calc.evaluate("2 3 + -"), is_err());
+        assert!(calc.evaluate("+ * 1 2"), is_err());
     }
 }
