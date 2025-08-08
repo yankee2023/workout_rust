@@ -141,7 +141,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rpn_cli"
+name = "rpncalc"
 version = "0.1.0"
 dependencies = [
  "anyhow",
