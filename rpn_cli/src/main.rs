@@ -41,8 +41,8 @@ impl RpnCalculator {
             if let Ok(x) = token.parse::<i32>() {
                 stack.push(x);
             } else {
-                let y = stack.pop().expect("invalid syntax");
-                let x = stack.pop().expect("invalid syntax");
+                let y = stack.pop().context(format!("invalid syntax at {}", pos))?;
+                let x = stack.pop().context(format!("invalid syntax at {}", pos))?;
                 let result = match token {
                     "+" => x + y,
                     "-" => x - y,
@@ -105,7 +105,7 @@ mod tests {
     #[test]
     fn test_ok() {
         let calc = RpnCalculator::new(false);
-        assert_eq!(calc.evaluate(#5).unwrap(), 5);
+        assert_eq!(calc.evaluate(5).unwrap(), 5);
         assert_eq!(calc.evaluate("2 3 +").unwrap(), 5);
         assert_eq!(calc.evaluate("2 3 -").unwrap(), -1);
         assert_eq!(calc.evaluate("2 3 *").unwrap(), 6);
@@ -114,7 +114,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_ng() {
         let calc = RpnCalculator::new(false);
         // 逆ポーランド記法の文法に違反している
