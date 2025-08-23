@@ -2,6 +2,7 @@
     "cSpell.words": [
         "actix",
         "askama",
+        "rusqlite",
         "thiserror"
     ]
 }

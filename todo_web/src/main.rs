@@ -1,6 +1,9 @@
 use actix_web::{get, App, HttpResponse, HttpServer, ResponseError};
+use r2d2::Pool;
 use thiserror::Error;
 use askama::Template;
+use r2d2_sqlite::SqliteConnectionManager;
+use rusqlite::params;
 
 struct TodoEntry {
     id: u32,
@@ -48,7 +51,11 @@ async fn index() -> Result<HttpResponse, MyError> {
 
 #[actix_web::main]
 async fn main() -> Result<(), actix_web::Error> {
-    HttpServer::new(move || App::new().service(index))
+    let manager = SqliteConnectionManager::file("todo.db");
+    let pool = Pool::new(manager).expect("Failed to create pool.");
+    let conn = pool.get().expect("Failed to get connection from pool.");
+    conn.execute("CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY, text TEXT NOT NULL)", params![],).expect("Failed to create table `todo`.");
+    HttpServer::new(move || App::new().service(index).app_data(pool.clone()))
         .bind("0.0.0.0:8080")?
         .run()
         .await?;
